@@ -65,7 +65,7 @@ class Reservation(models.Model):
         return str(self.created_at)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ("-created_at", )
 
 
 class Ticket(models.Model):
@@ -75,8 +75,8 @@ class Ticket(models.Model):
     reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ("performance", "row", "seat")
-        ordering = ["row", "seat"]
+        unique_together = ("performance", "row", "seat", )
+        ordering = ("row", "seat", )
 
     def __str__(self):
         return (
