@@ -24,11 +24,12 @@ class Genre(models.Model):
 class Play(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
-    genre = models.ManyToManyField(Genre, blank=True)
-    artist = models.ManyToManyField(Artist, blank=True)
+    genres = models.ManyToManyField(Genre, blank=True)
+    artists = models.ManyToManyField(Artist, blank=True)
+    acts = models.IntegerField(default=1)
 
     class Meta:
-        ordering = ("title", )
+        ordering = ("title",)
 
     def __str__(self) -> str:
         return self.title
@@ -53,7 +54,7 @@ class Performance(models.Model):
     show_time = models.DateTimeField()
 
     class Meta:
-        ordering = ("-show_time", )
+        ordering = ("-show_time",)
 
     def __str__(self):
         return self.play.title + " " + str(self.show_time)
@@ -61,15 +62,13 @@ class Performance(models.Model):
 
 class Reservation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
         return str(self.created_at)
 
     class Meta:
-        ordering = ("-created_at", )
+        ordering = ("-created_at",)
 
 
 class Ticket(models.Model):
@@ -79,10 +78,15 @@ class Ticket(models.Model):
     reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ("performance", "row", "seat", )
-        ordering = ("row", "seat", )
+        unique_together = (
+            "performance",
+            "row",
+            "seat",
+        )
+        ordering = (
+            "row",
+            "seat",
+        )
 
     def __str__(self):
-        return (
-            f"{str(self.movie_session)} (row: {self.row}, seat: {self.seat})"
-        )
+        return f"{str(self.movie_session)} (row: {self.row}, seat: {self.seat})"
