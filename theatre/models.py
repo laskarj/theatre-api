@@ -5,6 +5,7 @@ from django.conf import settings
 class Artist(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
+    about = models.TextField(blank=True)
 
     @property
     def full_name(self) -> str:
@@ -24,8 +25,12 @@ class Genre(models.Model):
 class Play(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
-    genres = models.ManyToManyField(Genre, blank=True)
-    artists = models.ManyToManyField(Artist, blank=True)
+    genres = models.ManyToManyField(
+        Genre, blank=True, related_name="plays"
+    )
+    artists = models.ManyToManyField(
+        Artist, blank=True, related_name="plays"
+    )
     acts = models.IntegerField(default=1)
 
     class Meta:

@@ -1,6 +1,7 @@
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import mixins
 
+from django.db.models.query import QuerySet
 
 from theatre.models import (
     Artist,
@@ -9,6 +10,7 @@ from theatre.models import (
 )
 from theatre.serializers import (
     ArtistSerializer,
+    ArtistDetailSerializer,
     GenreSerializer,
     PlaySerializer,
     PlayListSerializer,
@@ -34,6 +36,20 @@ class ArtistViewSet(
     queryset = Artist.objects.all()
     serializer_class = ArtistSerializer
 
+    def get_serializer_class(self) -> ArtistSerializer:
+        if self.action == "retrieve":
+            return ArtistDetailSerializer
+        return ArtistSerializer
+
+
+    def get_queryset(self) -> QuerySet:
+        queryset = self.queryset
+
+        if self.action == "retrieve":
+            queryset = queryset.prefetch_related("plays")
+
+        return queryset
+
 
 class PlayViewSet(
     mixins.CreateModelMixin,
@@ -44,7 +60,7 @@ class PlayViewSet(
     queryset = Play.objects.prefetch_related("genres", "artists")
     serializer_class = PlaySerializer
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> PlaySerializer:
         if self.action == "list":
             return PlayListSerializer
 

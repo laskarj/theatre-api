@@ -24,6 +24,7 @@ class ArtistSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "full_name",
+            "about"
         )
 
 
@@ -57,9 +58,7 @@ class PlayListSerializer(serializers.ModelSerializer):
 
 class PlayDetailSerializer(serializers.ModelSerializer):
     genres = GenreSerializer(many=True, read_only=True)
-    artists = serializers.SlugRelatedField(
-        many=True, read_only=True, slug_field="full_name"
-    )
+    artists = ArtistSerializer(many=True, read_only=True)
 
     class Meta:
         model = Play
@@ -71,3 +70,18 @@ class PlayDetailSerializer(serializers.ModelSerializer):
             "description",
             "artists",
         )
+
+
+class PlayListForArtistSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Play
+        fields = ("id", "title", )
+
+
+class ArtistDetailSerializer(serializers.ModelSerializer):
+    plays = PlayDetailForArtistSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Artist
+        fields = ("id", "first_name", "last_name", "about", "plays", )
