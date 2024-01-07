@@ -1,11 +1,31 @@
+import os
+import uuid
+
 from django.db import models
 from django.conf import settings
+from django.utils.text import slugify
+
+
+def object_image_file_path(
+        instance: models.Model,
+        filename: str
+) -> str:
+    """
+    Upload an image to object storage.
+    Call __str__ to get an image name from instance
+    """
+    directory = instance._meta.verbose_name_plural
+    _, extension = os.path.splitext(filename)
+    filename = f"{slugify(instance)}-{uuid.uuid4()}{extension}"
+
+    return os.path.join(f"uploads/{directory}/", filename)
 
 
 class Artist(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     about = models.TextField(blank=True)
+    image = models.ImageField(upload_to=object_image_file_path, blank=True)
 
     @property
     def full_name(self) -> str:
