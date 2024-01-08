@@ -36,7 +36,11 @@ class UploadImageMixin:
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class GenreViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    GenericViewSet
+):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
