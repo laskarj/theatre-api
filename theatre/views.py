@@ -1,10 +1,19 @@
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.request import Request
+from rest_framework import status
 from rest_framework import mixins
 
 from django.db.models.query import QuerySet
+from django.db.models import Count, F
 
-from theatre.models import Artist, Genre, Play
+from theatre.models import (
+    Artist,
+    Genre,
+    Play,
+    Performance,
+)
 from theatre.serializers import (
     ArtistSerializer,
     ArtistListSerializer,
@@ -13,6 +22,9 @@ from theatre.serializers import (
     PlaySerializer,
     PlayListSerializer,
     PlayDetailSerializer,
+    PerformanceSerializer,
+    PerformanceListSerializer,
+    PerformanceDetailSerializer,
     ImageSerializer,
 )
 
@@ -26,10 +38,10 @@ class UploadImageMixin:
         detail=True,
         url_path="upload-image",
     )
-    def upload_image(self, request, pk=None):
+    def upload_image(self, request: Request, pk: int = None) -> Response:
         """Endpoint for uploading image to specific object"""
-        object = self.get_object()
-        serializer = self.get_serializer(object, data=request.data)
+        _object = self.get_object()
+        serializer = self.get_serializer(_object, data=request.data)
 
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -94,3 +106,32 @@ class PlayViewSet(
             return PlayDetailSerializer
 
         return PlaySerializer
+
+
+class PerformanceViewSet(
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.ListModelMixin,
+    UploadImageMixin,
+    GenericViewSet
+):
+    queryset = (
+        Performance.objects.all()
+        .select_related("play", "theatre_hall")
+        .annotate(
+            tickets_available=(
+                F("theatre_hall__rows") + F("theatre_hall__seats_in_row")
+                - Count("tickets")
+            )
+        )
+    )
+    serializer_class = PerformanceSerializer
+
+    def get_serializer_class(self) -> PerformanceSerializer:
+        if self.action == "list":
+            return PerformanceListSerializer
+        if self.action == "retrieve":
+            return PerformanceDetailSerializer
+        if self.action == "upload-image":
+            return ImageSerializer
+        return PerformanceSerializer
