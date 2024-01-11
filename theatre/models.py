@@ -1,8 +1,9 @@
 import os
 import uuid
 
-from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
 from django.utils.text import slugify
 
 
@@ -116,6 +117,47 @@ class Ticket(models.Model):
     reservation = models.ForeignKey(
         Reservation, on_delete=models.CASCADE, related_name="tickets"
     )
+
+    @staticmethod
+    def validate_tickets(
+            row: int,
+            seat: int,
+            theater_hall: TheatreHall,
+            error_to_raise: ValidationError
+    ) -> None:
+        for ticket_attr_value, ticket_attr_name, theater_hall_attr_name in [
+            (row, "row", "rows"),
+            (seat, "seat", "seats_in_row")
+        ]:
+            count_attrs = getattr(theater_hall, theater_hall_attr_name)
+            if not (1 <= ticket_attr_value <= count_attrs):
+                raise error_to_raise(
+                    {
+                        ticket_attr_name: f"{ticket_attr_name} "
+                        "number must be in available range: "
+                        f"(1, {count_attrs})"
+                    }
+                )
+
+    def clean(self) -> None:
+        Ticket.validate_tickets(
+            self.row,
+            self.seat,
+            self.performance.theatre_hall,
+            ValidationError
+        )
+
+    def save(
+            self,
+            force_insert: bool = False,
+            force_update: bool = False,
+            using=None,
+            update_fields=None
+    ) -> models.Model:
+        self.full_clean()
+        return super(Ticket, self).save(
+            force_insert, force_update, using, update_fields
+        )
 
     class Meta:
         unique_together = (

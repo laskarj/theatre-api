@@ -1,33 +1,29 @@
 from datetime import datetime
 
-from rest_framework.viewsets import GenericViewSet
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.request import Request
-from rest_framework import status
-from rest_framework import mixins
-
+from django.db.models import Count, F, Q
 from django.db.models.query import QuerySet
-from django.db.models import Count, F
+from rest_framework import mixins, status
+from rest_framework.decorators import action
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.serializers import Serializer
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from theatre.models import (
-    Artist,
-    Genre,
-    Play,
-    Performance,
-)
+from theatre.models import Artist, Genre, Performance, Play, Reservation
 from theatre.serializers import (
-    ArtistSerializer,
-    ArtistListSerializer,
     ArtistDetailSerializer,
+    ArtistListSerializer,
+    ArtistSerializer,
     GenreSerializer,
-    PlaySerializer,
-    PlayListSerializer,
-    PlayDetailSerializer,
-    PerformanceSerializer,
-    PerformanceListSerializer,
-    PerformanceDetailSerializer,
     ImageSerializer,
+    PerformanceDetailSerializer,
+    PerformanceListSerializer,
+    PerformanceSerializer,
+    PlayDetailSerializer,
+    PlayListSerializer,
+    PlaySerializer,
+    ReservationListSerializer,
+    ReservationSerializer,
 )
 
 
@@ -49,7 +45,11 @@ class UploadImageMixin:
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class GenreViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    GenericViewSet
+):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
@@ -64,7 +64,7 @@ class ArtistViewSet(
     queryset = Artist.objects.all()
     serializer_class = ArtistSerializer
 
-    def get_serializer_class(self) -> ArtistSerializer:
+    def get_serializer_class(self) -> Serializer:
         if self.action == "list":
             return ArtistListSerializer
 
@@ -78,7 +78,12 @@ class ArtistViewSet(
 
     def get_queryset(self) -> QuerySet:
         queryset = self.queryset
-
+        search = self.request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+            )
         if self.action == "retrieve":
             queryset = queryset.prefetch_related("plays")
 
@@ -120,7 +125,7 @@ class PlayViewSet(
 
         return queryset.distinct()
 
-    def get_serializer_class(self) -> PlaySerializer:
+    def get_serializer_class(self) -> Serializer:
         if self.action == "list":
             return PlayListSerializer
 
@@ -131,11 +136,8 @@ class PlayViewSet(
 
 
 class PerformanceViewSet(
-    mixins.CreateModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.ListModelMixin,
     UploadImageMixin,
-    GenericViewSet,
+    ModelViewSet,
 ):
     queryset = (
         Performance.objects.all()
@@ -150,7 +152,7 @@ class PerformanceViewSet(
     )
     serializer_class = PerformanceSerializer
 
-    def get_serializer_class(self) -> PerformanceSerializer:
+    def get_serializer_class(self) -> Serializer:
         if self.action == "list":
             return PerformanceListSerializer
         if self.action == "retrieve":
@@ -173,3 +175,26 @@ class PerformanceViewSet(
             queryset = queryset.filter(show_time__date=date)
 
         return queryset
+
+
+class ReservationViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    GenericViewSet,
+):
+    serializer_class = ReservationSerializer
+    queryset = Reservation.objects.prefetch_related(
+        "tickets__performance__play", "tickets__performance__theatre_hall"
+    )
+
+    def get_queryset(self) -> QuerySet:
+        return Reservation.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self) -> ReservationSerializer:
+        if self.action == "list":
+            return ReservationListSerializer
+
+        return ReservationSerializer
+
+    def perform_create(self, serializer: Serializer) -> None:
+        serializer.save(user=self.request.user)
