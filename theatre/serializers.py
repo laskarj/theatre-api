@@ -1,12 +1,15 @@
+from django.db import transaction
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from theatre.models import (
     Artist,
     Genre,
-    Play,
     Performance,
-    Ticket,
+    Play,
+    Reservation,
     TheatreHall,
+    Ticket,
 )
 
 
@@ -158,6 +161,27 @@ class TheatreHallSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "rows", "seats_in_row", )
 
 
+class TicketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Ticket
+        fields = ("id", "row", "seat", "performance", )
+
+    def validate(self, attrs: dict) -> dict:
+        data = super(TicketSerializer, self).validate(attrs)
+        Ticket.validate_tickets(
+            attrs["row"],
+            attrs["seat"],
+            attrs["performance"].theatre_hall,
+            ValidationError
+        )
+        return data
+
+
+class TicketListSerializer(TicketSerializer):
+    performance = PerformanceListSerializer(many=False, read_only=True)
+
+
 class TicketSeatsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ticket
@@ -181,3 +205,27 @@ class PerformanceDetailSerializer(serializers.ModelSerializer):
             "theatre_hall",
             "taken_places",
         )
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    tickets = TicketSerializer(
+        many=True, read_only=True, allow_empty=False
+    )
+
+    class Meta:
+        model = Reservation
+        fields = ("id", "tickets", "created_at", )
+
+    def create(self, validated_data: dict) -> Reservation:
+        with transaction.atomic():
+            tickets_data = validated_data.pop("tickets")
+            reservation = validated_data.pop("reservation")
+
+            for ticket_data in tickets_data:
+                Ticket.objects.create(order=reservation, **ticket_data)
+
+            return reservation
+
+
+class ReservationListSerializer(ReservationSerializer):
+    tickets = TicketListSerializer(many=True, read_only=True)
