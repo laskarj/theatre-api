@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -30,7 +32,6 @@ from theatre.serializers import (
 
 
 class UploadImageMixin:
-
     upload_image_field = "image"
 
     @action(
@@ -48,11 +49,7 @@ class UploadImageMixin:
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class GenreViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    GenericViewSet
-):
+class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
@@ -62,13 +59,12 @@ class ArtistViewSet(
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
     GenericViewSet,
-    UploadImageMixin
+    UploadImageMixin,
 ):
     queryset = Artist.objects.all()
     serializer_class = ArtistSerializer
 
     def get_serializer_class(self) -> ArtistSerializer:
-
         if self.action == "list":
             return ArtistListSerializer
 
@@ -98,6 +94,32 @@ class PlayViewSet(
     queryset = Play.objects.prefetch_related("genres", "artists")
     serializer_class = PlaySerializer
 
+    @staticmethod
+    def _params_to_ints(query: str) -> list[int]:
+        """Convert query string ids to a list of integer ids."""
+        return [int(str_id) for str_id in query.split(",")]
+
+    def get_queryset(self) -> QuerySet:
+        """Retrieve the queryset with filters"""
+        title = self.request.query_params.get("title")
+        genres = self.request.query_params.get("genres")
+        artists = self.request.query_params.get("artists")
+
+        queryset = self.queryset
+
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+        if genres:
+            genres_ids = self._params_to_ints(genres)
+            queryset = queryset.filter(genres__id__in=genres_ids)
+
+        if artists:
+            artists_ids = self._params_to_ints(artists)
+            queryset = queryset.filter(artists__id__in=artists_ids)
+
+        return queryset.distinct()
+
     def get_serializer_class(self) -> PlaySerializer:
         if self.action == "list":
             return PlayListSerializer
@@ -113,14 +135,15 @@ class PerformanceViewSet(
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
     UploadImageMixin,
-    GenericViewSet
+    GenericViewSet,
 ):
     queryset = (
         Performance.objects.all()
         .select_related("play", "theatre_hall")
         .annotate(
             tickets_available=(
-                F("theatre_hall__rows") + F("theatre_hall__seats_in_row")
+                F("theatre_hall__rows")
+                + F("theatre_hall__seats_in_row")
                 - Count("tickets")
             )
         )
@@ -135,3 +158,18 @@ class PerformanceViewSet(
         if self.action == "upload-image":
             return ImageSerializer
         return PerformanceSerializer
+
+    def get_queryset(self) -> QuerySet:
+        date = self.request.query_params.get("date")
+        play_id_str = self.request.query_params.get("play")
+
+        queryset = self.queryset
+
+        if play_id_str:
+            queryset = queryset.filter(play_id=int(play_id_str))
+
+        if date:
+            date = datetime.strptime(date, "%Y-%m-%d").date()
+            queryset = queryset.filter(show_time__date=date)
+
+        return queryset
