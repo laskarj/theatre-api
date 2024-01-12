@@ -8,8 +8,11 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.permissions import IsAuthenticated
 
 from theatre.models import Artist, Genre, Performance, Play, Reservation
+
+from theatre.permissions import IsAdminUserOrReadOnly
 from theatre.serializers import (
     ArtistDetailSerializer,
     ArtistListSerializer,
@@ -52,6 +55,7 @@ class GenreViewSet(
 ):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    permission_classes = (IsAdminUserOrReadOnly, )
 
 
 class ArtistViewSet(
@@ -63,6 +67,7 @@ class ArtistViewSet(
 ):
     queryset = Artist.objects.all()
     serializer_class = ArtistSerializer
+    permission_classes = (IsAdminUserOrReadOnly, )
 
     def get_serializer_class(self) -> Serializer:
         if self.action == "list":
@@ -98,6 +103,7 @@ class PlayViewSet(
 ):
     queryset = Play.objects.prefetch_related("genres", "artists")
     serializer_class = PlaySerializer
+    permission_classes = (IsAdminUserOrReadOnly, )
 
     @staticmethod
     def _params_to_ints(query: str) -> list[int]:
@@ -151,6 +157,7 @@ class PerformanceViewSet(
         )
     )
     serializer_class = PerformanceSerializer
+    permission_classes = (IsAdminUserOrReadOnly, )
 
     def get_serializer_class(self) -> Serializer:
         if self.action == "list":
@@ -186,6 +193,7 @@ class ReservationViewSet(
     queryset = Reservation.objects.prefetch_related(
         "tickets__performance__play", "tickets__performance__theatre_hall"
     )
+    permission_classes = (IsAuthenticated, )
 
     def get_queryset(self) -> QuerySet:
         return Reservation.objects.filter(user=self.request.user)
