@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    # Apps
+    "rest_framework_simplejwt",
     "user",
     "theatre",
 ]
@@ -88,24 +88,27 @@ DATABASES = {
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation."
-                "UserAttributeSimilarityValidator"
-
+        "UserAttributeSimilarityValidator"
     },
-    {
-        "NAME": "django.contrib.auth.password_validation."
-                "MinimumLengthValidator"
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation."
-                "CommonPasswordValidator"
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation."
-                "NumericPasswordValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation." "MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation." "CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation." "NumericPasswordValidator"},
 ]
 
 AUTH_USER_MODEL = "user.User"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
