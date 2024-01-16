@@ -10,3 +10,4 @@ venv/
 media
 vol
 .gitignore
+pyproject.toml
