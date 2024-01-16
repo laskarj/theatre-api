@@ -68,7 +68,11 @@ class PaginationMixin:
         to customize pagination settings.
     """
 
-    def get_pagination(self, page_size: int, max_pages: int) -> PageNumberPagination:
+    def get_pagination(
+            self,
+            page_size: int,
+            max_pages: int
+    ) -> PageNumberPagination:
         """
         Create and configure a PageNumberPagination
         instance with custom settings.
@@ -86,7 +90,11 @@ class PaginationMixin:
         return paginator
 
 
-class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewSet):
+class GenreViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    GenericViewSet
+):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
@@ -125,7 +133,8 @@ class ArtistViewSet(
         search = self.request.query_params.get("search")
         if search:
             queryset = queryset.filter(
-                Q(first_name__icontains=search) | Q(last_name__icontains=search)
+                Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
             )
         if self.action == "retrieve":
             queryset = queryset.prefetch_related("plays")
