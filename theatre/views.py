@@ -9,7 +9,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiTypes,
+    OpenApiExample,
+)
 
 from theatre.models import Artist, Genre, Performance, Play, Reservation
 
@@ -69,9 +75,7 @@ class PaginationMixin:
     """
 
     def get_pagination(
-            self,
-            page_size: int,
-            max_pages: int
+        self, page_size: int, max_pages: int
     ) -> PageNumberPagination:
         """
         Create and configure a PageNumberPagination
@@ -91,9 +95,7 @@ class PaginationMixin:
 
 
 class GenreViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    GenericViewSet
+    mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewSet
 ):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
@@ -108,6 +110,21 @@ class ArtistViewSet(
     mixins.ListModelMixin,
     GenericViewSet,
 ):
+    """
+    ViewSet for managing artists, supporting image uploads and pagination.
+
+    This ViewSet handles the CRUD operations for artists, providing pagination,
+    image upload functionality, and customized serializers for listing,
+    retrieval, and image uploading actions.
+
+    Permissions are allowed to:
+        - Only administrators have the permission to create new artists;
+        - Unauthorised and authorised users have access only to GET.
+
+    Filtering:
+        - By first_name or last_name in query parameters.
+    """
+
     queryset = Artist.objects.all()
     serializer_class = ArtistSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
@@ -130,16 +147,55 @@ class ArtistViewSet(
 
     def get_queryset(self) -> QuerySet:
         queryset = self.queryset
-        search = self.request.query_params.get("search")
-        if search:
-            queryset = queryset.filter(
-                Q(first_name__icontains=search)
-                | Q(last_name__icontains=search)
-            )
+        search_by = self.request.query_params.get("search_by")
+
+        if search_by:
+            search_by = search_by.split()
+            if len(search_by) == 2:
+                queryset = queryset.filter(
+                    Q(first_name__icontains=search_by[0])
+                    & Q(last_name__icontains=search_by[1])
+                )
+            else:
+                queryset = queryset.filter(
+                    Q(first_name__icontains=search_by[0])
+                    | Q(last_name__icontains=search_by[0])
+                )
+
         if self.action == "retrieve":
             queryset = queryset.prefetch_related("plays")
 
-        return queryset
+        return queryset.distinct()
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="search_by",
+                description=("Filter by first_name, last_name or full_name"),
+                type=OpenApiTypes.STR,
+                examples=[
+                    OpenApiExample(
+                        name="first_name or last_name",
+                        value="abr",
+                        description=(
+                            "Search by the content of characters "
+                            "in the first_name or last_name."
+                        ),
+                    ),
+                    OpenApiExample(
+                        name="full_name",
+                        value="mik abr",
+                        description=(
+                            "Search by the content of characters "
+                            "in the first_name and last_name."
+                        ),
+                    ),
+                ],
+            )
+        ]
+    )
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        return super().list(request, *args, **kwargs)
 
 
 class PlayViewSet(
