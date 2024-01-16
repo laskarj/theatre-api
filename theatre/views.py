@@ -4,6 +4,7 @@ from django.db.models import Count, F, Q
 from django.db.models.query import QuerySet
 from rest_framework import mixins, status
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
@@ -48,26 +49,64 @@ class UploadImageMixin:
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class GenreViewSet(
-    mixins.ListModelMixin,
-    mixins.CreateModelMixin,
-    GenericViewSet
-):
+class PaginationMixin:
+    """
+    Mixin class for providing custom pagination configuration.
+    Attributes:
+        None
+
+    Methods:
+        Create and configure a PageNumberPagination instance:
+            get_pagination(
+            page_size: int,
+             max_pages: int
+             ) -> PageNumberPagination:
+
+    Usage:
+        Inherit from this mixin in a
+        Django REST Framework ViewSet
+        to customize pagination settings.
+    """
+
+    def get_pagination(self, page_size: int, max_pages: int) -> PageNumberPagination:
+        """
+        Create and configure a PageNumberPagination
+        instance with custom settings.
+
+        Args:
+            page_size (int): The number of items per page.
+            max_pages (int): The maximum number of pages allowed.
+
+        Returns:
+            PageNumberPagination: Configured instance of PageNumberPagination.
+        """
+        paginator = PageNumberPagination
+        paginator.page_size, paginator.max_page_size = page_size, max_pages
+
+        return paginator
+
+
+class GenreViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, GenericViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAdminUserOrReadOnly, )
+    permission_classes = (IsAdminUserOrReadOnly,)
 
 
 class ArtistViewSet(
+    UploadImageMixin,
+    PaginationMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
     GenericViewSet,
-    UploadImageMixin,
 ):
     queryset = Artist.objects.all()
     serializer_class = ArtistSerializer
-    permission_classes = (IsAdminUserOrReadOnly, )
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.pagination_class = self.get_pagination(10, 100)
 
     def get_serializer_class(self) -> Serializer:
         if self.action == "list":
@@ -86,8 +125,7 @@ class ArtistViewSet(
         search = self.request.query_params.get("search")
         if search:
             queryset = queryset.filter(
-                Q(first_name__icontains=search)
-                | Q(last_name__icontains=search)
+                Q(first_name__icontains=search) | Q(last_name__icontains=search)
             )
         if self.action == "retrieve":
             queryset = queryset.prefetch_related("plays")
@@ -96,6 +134,7 @@ class ArtistViewSet(
 
 
 class PlayViewSet(
+    PaginationMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
@@ -103,7 +142,11 @@ class PlayViewSet(
 ):
     queryset = Play.objects.prefetch_related("genres", "artists")
     serializer_class = PlaySerializer
-    permission_classes = (IsAdminUserOrReadOnly, )
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.pagination_class = self.get_pagination(10, 100)
 
     @staticmethod
     def _params_to_ints(query: str) -> list[int]:
@@ -143,6 +186,7 @@ class PlayViewSet(
 
 class PerformanceViewSet(
     UploadImageMixin,
+    PaginationMixin,
     ModelViewSet,
 ):
     queryset = (
@@ -157,7 +201,11 @@ class PerformanceViewSet(
         )
     )
     serializer_class = PerformanceSerializer
-    permission_classes = (IsAdminUserOrReadOnly, )
+    permission_classes = (IsAdminUserOrReadOnly,)
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.pagination_class = self.get_pagination(10, 100)
 
     def get_serializer_class(self) -> Serializer:
         if self.action == "list":
@@ -185,6 +233,7 @@ class PerformanceViewSet(
 
 
 class ReservationViewSet(
+    PaginationMixin,
     mixins.CreateModelMixin,
     mixins.ListModelMixin,
     GenericViewSet,
@@ -193,7 +242,11 @@ class ReservationViewSet(
     queryset = Reservation.objects.prefetch_related(
         "tickets__performance__play", "tickets__performance__theatre_hall"
     )
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.pagination_class = self.get_pagination(10, 100)
 
     def get_queryset(self) -> QuerySet:
         return Reservation.objects.filter(user=self.request.user)
