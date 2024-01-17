@@ -205,6 +205,28 @@ class PlayViewSet(
     mixins.ListModelMixin,
     GenericViewSet,
 ):
+    """
+    ViewSet for managing plays with support for pagination, creation,
+    retrieval and listing.
+
+    This ViewSet provides CRUD operations for play instances.
+    It includes pagination and different serializers for listing, retrieval
+    and creation actions.
+
+    Permissions:
+        - Only administrators have the permission to modify
+          (create, update, delete) play instances;
+        - Unauthenticated and authenticated users have read-only access (GET)
+          to play instances.
+
+    Filtering:
+        - Filter plays by title using the 'title' query parameter.
+        - Filter plays by genres using the 'genres' query parameter
+          (comma-separated genre ids).
+        - Filter plays by artists using the 'artists' query parameter
+          (comma-separated artist ids).
+    """
+
     queryset = Play.objects.prefetch_related("genres", "artists")
     serializer_class = PlaySerializer
     permission_classes = (IsAdminUserOrReadOnly,)
@@ -247,6 +269,45 @@ class PlayViewSet(
             return PlayDetailSerializer
 
         return PlaySerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="title",
+                description="Filtering by title",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+            ),
+            OpenApiParameter(
+                name="artists",
+                description="Filtering by artist ids",
+                type={"type": "list", "items": {"type": "number"}},
+                location=OpenApiParameter.QUERY,
+                examples=[
+                    OpenApiExample(
+                        name="Artists QWERY example",
+                        value="[1,2,3]",
+                        description="List of artist ids",
+                    )
+                ],
+            ),
+            OpenApiParameter(
+                name="genres",
+                description="Filtering by genre ids.",
+                type={"type": "list", "items": {"type": "number"}},
+                location=OpenApiParameter.QUERY,
+                examples=[
+                    OpenApiExample(
+                        name="Genres QWERY example",
+                        value="[1,2,3]",
+                        description="List of genre ids.",
+                    )
+                ],
+            ),
+        ]
+    )
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        return super().list(request, *args, **kwargs)
 
 
 class PerformanceViewSet(
