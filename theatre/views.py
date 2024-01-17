@@ -174,6 +174,7 @@ class ArtistViewSet(
                 name="search_by",
                 description=("Filter by first_name, last_name or full_name"),
                 type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
                 examples=[
                     OpenApiExample(
                         name="first_name or last_name",
