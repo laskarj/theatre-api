@@ -254,6 +254,26 @@ class PerformanceViewSet(
     PaginationMixin,
     ModelViewSet,
 ):
+    """
+    ViewSet for managing performances with support for
+    image uploads and pagination.
+
+    This ViewSet handles CRUD operations for performance instances.
+    It provides pagination, image upload functionality, and customized
+    serializers for listing, retrieval, and image uploading actions.
+
+    Permissions:
+        - Only administrators have the permission to modify
+        (create, update, delete) performance instances;
+        - Unauthenticated and authenticated users have read-only access (GET)
+        to performance instances.
+
+    Filtering:
+        - Filter performances by play_id using the 'play' query parameter.
+        - Filter performances by date using the 'date' query parameter
+          (format: 'YYYY-MM-DD').
+    """
+
     queryset = (
         Performance.objects.all()
         .select_related("play", "theatre_hall")
@@ -295,6 +315,32 @@ class PerformanceViewSet(
             queryset = queryset.filter(show_time__date=date)
 
         return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="date",
+                description=("Filtering by date."),
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                examples=[
+                    OpenApiExample(
+                        name="Date example.",
+                        description="Format: yyyy-mm-dd",
+                        value="2024-01-10",
+                    )
+                ],
+            ),
+            OpenApiParameter(
+                name="play_id",
+                type=OpenApiTypes.INT,
+                description="Filtering by play_id.",
+                location=OpenApiParameter.QUERY,
+            ),
+        ]
+    )
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        return super().list(request, *args, **kwargs)
 
 
 class ReservationViewSet(
