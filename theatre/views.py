@@ -88,6 +88,7 @@ class PaginationMixin:
         Returns:
             PageNumberPagination: Configured instance of PageNumberPagination.
         """
+
         paginator = PageNumberPagination
         paginator.page_size, paginator.max_page_size = page_size, max_pages
 
@@ -410,6 +411,22 @@ class ReservationViewSet(
     mixins.ListModelMixin,
     GenericViewSet,
 ):
+    """
+    ViewSet for managing reservations, supporting listing and creation.
+
+    This ViewSet handles the listing and creation of reservations.
+    It includes pagination and different serializers for listing
+    and creation actions.
+
+    Permissions:
+        - Only authenticated users have access to create and list their
+          own reservations.
+
+    Filtering:
+        - Only retrieves reservations associated with
+          the authenticated user.
+    """
+
     serializer_class = ReservationSerializer
     queryset = Reservation.objects.prefetch_related(
         "tickets__performance__play", "tickets__performance__theatre_hall"
