@@ -19,6 +19,7 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cp .env.sample .env
+echo "DJANGO_SECRET_KEY=$(openssl rand -hex 32)" >> .env
 docker-compose build
 docker-compose up
 ```
