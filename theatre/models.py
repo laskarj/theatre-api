@@ -19,7 +19,7 @@ def object_image_file_path(
     _, extension = os.path.splitext(filename)
     filename = f"{slugify(instance)}-{uuid.uuid4()}{extension}"
 
-    return os.path.join(f"uploads/{directory}/", filename)
+    return os.path.join(f"uploads", directory, filename)
 
 
 class Artist(models.Model):
@@ -90,7 +90,7 @@ class Performance(models.Model):
         ordering = ("-show_time",)
 
     def __str__(self):
-        return self.play.title + " " + str(self.show_time)
+        return f"{self.play.title} {self.show_time}"
 
 
 class Reservation(models.Model):
