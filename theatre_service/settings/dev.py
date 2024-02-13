@@ -1,10 +1,7 @@
 import socket
-from dotenv import load_dotenv
 
 from .docker import *
 
-
-load_dotenv()
 
 
 DEBUG = True
