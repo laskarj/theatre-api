@@ -1,6 +1,9 @@
 from .base import *
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DATABASES = {
     "default": {
@@ -12,8 +15,6 @@ DATABASES = {
     }
 }
 
-
-DJANGO_SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 
 
 MEDIA_URL = "/media/"
