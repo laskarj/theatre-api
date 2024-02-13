@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -115,10 +116,22 @@ class ArtistDetailSerializer(serializers.ModelSerializer):
         )
 
 
-class ImageSerializer(serializers.ModelSerializer):
+class ArtistImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Artist
         fields = ("id", "image", )
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ("id", "image", )
+
+
+def get_image_serializer(model_class: Model):
+    class DynamicImageSerializer(ImageSerializer):
+        class Meta(ImageSerializer.Meta):
+            model = model_class
+    return DynamicImageSerializer
 
 
 class PerformanceSerializer(serializers.ModelSerializer):
@@ -220,7 +233,10 @@ class ReservationSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             tickets_data = validated_data.pop("tickets")
             reservation = validated_data.pop("reservation")
-            ticket_instances = [Ticket(**ticket_data) for ticket_data in tickets_data]
+            ticket_instances = [
+                Ticket(**ticket_data)
+                for ticket_data in tickets_data
+            ]
             Ticket.objects.bulk_create(ticket_instances)
             return reservation
 

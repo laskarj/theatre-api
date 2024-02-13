@@ -25,7 +25,6 @@ from theatre.serializers import (
     ArtistListSerializer,
     ArtistSerializer,
     GenreSerializer,
-    ImageSerializer,
     PerformanceDetailSerializer,
     PerformanceListSerializer,
     PerformanceSerializer,
@@ -34,6 +33,7 @@ from theatre.serializers import (
     PlaySerializer,
     ReservationListSerializer,
     ReservationSerializer,
+    get_image_serializer
 )
 
 
@@ -47,9 +47,7 @@ class UploadImageMixin:
     )
     def upload_image(self, request: Request, pk: int = None) -> Response:
         """Endpoint for uploading image to specific object"""
-        _object = self.get_object()
-        serializer = self.get_serializer(_object, data=request.data)
-
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -142,7 +140,7 @@ class ArtistViewSet(
             return ArtistDetailSerializer
 
         if self.action == "upload-image":
-            return ImageSerializer
+            return get_image_serializer(self.get_object())
 
         return ArtistSerializer
 
@@ -361,7 +359,7 @@ class PerformanceViewSet(
         if self.action == "retrieve":
             return PerformanceDetailSerializer
         if self.action == "upload-image":
-            return ImageSerializer
+            return get_image_serializer(self.get_object())
         return PerformanceSerializer
 
     def get_queryset(self) -> QuerySet:
