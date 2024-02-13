@@ -220,10 +220,8 @@ class ReservationSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             tickets_data = validated_data.pop("tickets")
             reservation = validated_data.pop("reservation")
-
-            for ticket_data in tickets_data:
-                Ticket.objects.create(order=reservation, **ticket_data)
-
+            ticket_instances = [Ticket(**ticket_data) for ticket_data in tickets_data]
+            Ticket.objects.bulk_create(ticket_instances)
             return reservation
 
 
