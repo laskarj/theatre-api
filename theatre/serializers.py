@@ -116,12 +116,6 @@ class ArtistDetailSerializer(serializers.ModelSerializer):
         )
 
 
-class ArtistImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Artist
-        fields = ("id", "image", )
-
-
 def get_image_serializer(model_class: Model):
     class DynamicImageSerializer(serializers.ModelSerializer):
         class Meta:
@@ -138,7 +132,6 @@ class PerformanceSerializer(serializers.ModelSerializer):
             "id",
             "theatre_hall",
             "show_time",
-            "image",
             "play"
         )
 
