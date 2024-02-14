@@ -140,3 +140,26 @@ class AuthenticatedArtistsApiTests(UnauthenticatedArtistsApiTests):
         response = self.client.post(ARTISTS_BASE_URL, payload)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AdminArtistsApiTests(TestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            "admin@test.com", "admin1234", is_staff=True
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_create_artist(self) -> None:
+        payload = {
+            "first_name": "First",
+            "last_name": "Last",
+            "about": "Long text field"
+        }
+        response = self.client.post(ARTISTS_BASE_URL, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        artist = Artist.objects.get(id=response.data["id"])
+        for key in payload:
+            self.assertEqual(payload[key], getattr(artist, key))
