@@ -26,7 +26,7 @@ class Artist(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     about = models.TextField(blank=True)
-    image = models.ImageField(upload_to=object_image_file_path, blank=True)
+    image = models.ImageField(upload_to=object_image_file_path, null=True)
 
     @property
     def full_name(self) -> str:
@@ -83,7 +83,7 @@ class Performance(models.Model):
     )
     show_time = models.DateTimeField()
     image = models.ImageField(
-        upload_to=object_image_file_path, blank=True
+        upload_to=object_image_file_path, null=True
     )
 
     class Meta:

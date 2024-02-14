@@ -33,7 +33,7 @@ from theatre.serializers import (
     PlaySerializer,
     ReservationListSerializer,
     ReservationSerializer,
-    get_image_serializer
+    get_image_serializer,
 )
 
 
@@ -44,10 +44,12 @@ class UploadImageMixin:
         methods=["POST"],
         detail=True,
         url_path="upload-image",
+        permission_classes=[IsAdminUser],
     )
     def upload_image(self, request: Request, pk: int = None) -> Response:
         """Endpoint for uploading image to specific object"""
-        serializer = self.get_serializer(data=request.data)
+        _object = self.get_object()
+        serializer = self.get_serializer(_object, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -139,8 +141,9 @@ class ArtistViewSet(
         if self.action == "retrieve":
             return ArtistDetailSerializer
 
-        if self.action == "upload-image":
-            return get_image_serializer(self.get_object())
+        if self.action == "upload_image":
+            model = self.get_queryset().model
+            return get_image_serializer(model)
 
         return ArtistSerializer
 
@@ -311,9 +314,9 @@ class PlayViewSet(
 
 
 class PerformanceViewSet(
-    UploadImageMixin,
     PaginationMixin,
     ModelViewSet,
+    UploadImageMixin,
 ):
     """
     ViewSet for managing performances with support for
@@ -358,8 +361,9 @@ class PerformanceViewSet(
             return PerformanceListSerializer
         if self.action == "retrieve":
             return PerformanceDetailSerializer
-        if self.action == "upload-image":
-            return get_image_serializer(self.get_object())
+        if self.action == "upload_image":
+            model = self.get_queryset().model
+            return get_image_serializer(model)
         return PerformanceSerializer
 
     def get_queryset(self) -> QuerySet:
