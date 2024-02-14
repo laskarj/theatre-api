@@ -81,3 +81,18 @@ class UnauthenticatedArtistsApiTests(TestCase):
 
         self.assertIn(serializer1.data, response.data["results"])
         self.assertNotIn(serializer2.data, response.data["results"])
+
+    def test_artist_filtering_by_partial_identifiers(self):
+        artist1 = sample_artist(first_name="First1", last_name="Last1")
+        artist2 = sample_artist(first_name="First2", last_name="Last2")
+
+        response = self.client.get(
+            ARTISTS_BASE_URL,
+            {"search_by": "fir las"},
+        )
+
+        serializer1 = ArtistListSerializer(artist1)
+        serializer2 = ArtistListSerializer(artist2)
+
+        self.assertIn(serializer1.data, response.data["results"])
+        self.assertIn(serializer2.data, response.data["results"])
