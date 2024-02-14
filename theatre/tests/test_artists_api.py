@@ -25,10 +25,10 @@ def detail_artist_url(artist_id) -> str:
 
 
 class UnauthenticatedArtistsApiTests(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.client = APIClient()
 
-    def test_artists_list(self):
+    def test_artists_list(self) -> None:
         sample_artist()
         sample_artist()
 
@@ -40,7 +40,7 @@ class UnauthenticatedArtistsApiTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["results"], serializer.data)
 
-    def test_artists_filtering_by_full_name(self):
+    def test_artists_filtering_by_full_name(self) -> None:
         artist1 = sample_artist(first_name="First1", last_name="Last1")
         artist2 = sample_artist(first_name="First2", last_name="Last2")
 
@@ -55,7 +55,7 @@ class UnauthenticatedArtistsApiTests(TestCase):
         self.assertIn(serializer1.data, response.data["results"])
         self.assertNotIn(serializer2.data, response.data["results"])
 
-    def test_artists_filtering_by_first_name(self):
+    def test_artists_filtering_by_first_name(self) -> None:
         artist1 = sample_artist(first_name="First1", last_name="Last1")
         artist2 = sample_artist(first_name="First2", last_name="Last2")
 
@@ -70,7 +70,7 @@ class UnauthenticatedArtistsApiTests(TestCase):
         self.assertIn(serializer1.data, response.data["results"])
         self.assertNotIn(serializer2.data, response.data["results"])
 
-    def test_artists_filtering_by_last_name(self):
+    def test_artists_filtering_by_last_name(self) -> None:
         artist1 = sample_artist(first_name="First1", last_name="Last1")
         artist2 = sample_artist(first_name="First2", last_name="Last2")
 
@@ -85,7 +85,7 @@ class UnauthenticatedArtistsApiTests(TestCase):
         self.assertIn(serializer1.data, response.data["results"])
         self.assertNotIn(serializer2.data, response.data["results"])
 
-    def test_artist_filtering_by_partial_identifiers(self):
+    def test_artist_filtering_by_partial_identifiers(self) -> None:
         artist1 = sample_artist(first_name="First1", last_name="Last1")
         artist2 = sample_artist(first_name="First2", last_name="Last2")
 
@@ -100,7 +100,7 @@ class UnauthenticatedArtistsApiTests(TestCase):
         self.assertIn(serializer1.data, response.data["results"])
         self.assertIn(serializer2.data, response.data["results"])
 
-    def test_retrieve_artist_detail(self):
+    def test_retrieve_artist_detail(self) -> None:
         artist = sample_artist()
 
         url = detail_artist_url(artist.id)
