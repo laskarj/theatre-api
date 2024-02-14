@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.auth import get_user_model
 
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -111,7 +112,7 @@ class UnauthenticatedArtistsApiTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
 
-    def test_create_artist_raise_401(self) -> None:
+    def test_create_artist_raise_error(self) -> None:
         payload = {
             "first_name": "First",
             "last_name": "Last",
@@ -120,3 +121,22 @@ class UnauthenticatedArtistsApiTests(TestCase):
         response = self.client.post(ARTISTS_BASE_URL, payload)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AuthenticatedArtistsApiTests(UnauthenticatedArtistsApiTests):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            "test@test.com", "test1234"
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_create_artist_raise_error(self) -> None:
+        payload = {
+            "first_name": "First",
+            "last_name": "Last",
+            "about": "Long text field",
+        }
+        response = self.client.post(ARTISTS_BASE_URL, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
