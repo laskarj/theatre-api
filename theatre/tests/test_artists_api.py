@@ -19,6 +19,7 @@ def sample_artist(**params) -> Artist:
     defaults.update(**params)
     return Artist.objects.create(**defaults)
 
+
 def detail_artist_url(artist_id) -> str:
     return reverse("theatre:artist-detail", args=[artist_id])
 
@@ -109,3 +110,13 @@ class UnauthenticatedArtistsApiTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, serializer.data)
+
+    def test_create_artist_raise_401(self) -> None:
+        payload = {
+            "first_name": "First",
+            "last_name": "Last",
+            "about": "Long text field",
+        }
+        response = self.client.post(ARTISTS_BASE_URL, payload)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
