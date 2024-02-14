@@ -5,8 +5,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 from theatre.models import Artist
-from theatre.serializers import ArtistListSerializer
-
+from theatre.serializers import ArtistListSerializer, ArtistDetailSerializer
 
 ARTISTS_BASE_URL = reverse("theatre:artist-list")
 
@@ -19,6 +18,9 @@ def sample_artist(**params) -> Artist:
     }
     defaults.update(**params)
     return Artist.objects.create(**defaults)
+
+def detail_artist_url(artist_id) -> str:
+    return reverse("theatre:artist-detail", args=[artist_id])
 
 
 class UnauthenticatedArtistsApiTests(TestCase):
@@ -96,3 +98,14 @@ class UnauthenticatedArtistsApiTests(TestCase):
 
         self.assertIn(serializer1.data, response.data["results"])
         self.assertIn(serializer2.data, response.data["results"])
+
+    def test_retrieve_artist_detail(self):
+        artist = sample_artist()
+
+        url = detail_artist_url(artist.id)
+        response = self.client.get(url)
+
+        serializer = ArtistDetailSerializer(artist)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, serializer.data)
